@@ -7,7 +7,7 @@ namespace UserFactory.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class UsersController : ControllerBase
+    public class UsersController : Controller
     {
         private readonly WebDbContext _context;
 
@@ -23,7 +23,7 @@ namespace UserFactory.Controllers
             return Ok(users);
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("{guid}")]
         public async Task<IActionResult> GetUserByGuid(Guid guid)
         {
             var user = await _context.Users.FindAsync(guid);
