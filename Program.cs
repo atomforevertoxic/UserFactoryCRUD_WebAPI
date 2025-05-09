@@ -1,3 +1,7 @@
+using Microsoft.EntityFrameworkCore;
+using System;
+using UserFactory.Data;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Swagger initialization
@@ -9,6 +13,10 @@ builder.Services.AddSwaggerGen(c =>
         Version = "v1"
     });
 });
+
+// InMemory registration
+builder.Services.AddDbContext<WebDbContext>(options =>
+    options.UseInMemoryDatabase("InMemoryDb"));
 
 builder.Services.AddControllersWithViews();
 
