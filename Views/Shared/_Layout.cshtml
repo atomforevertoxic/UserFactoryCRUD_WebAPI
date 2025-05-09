@@ -4,44 +4,55 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - UserFactory</title>
-    <script type="importmap"></script>
+
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/UserFactory.styles.css" asp-append-version="true" />
+
 </head>
 <body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">UserFactory</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-        </nav>
+
+    <header class="d-flex flex-wrap justify-content-center py-3 mb-4 border-bottom">
+        <a class="d-flex align-items-center mb-3 mb-md-0 me-md-auto ms-5 link-body-emphasis text-decoration-none fs-1" asp-area="" asp-controller="Home" asp-action="Index">
+            <span class=" ms-5 fs-2">UserFactory</span>
+        </a>
+        <ul class="nav nav-pills">
+            <li class="nav-item">
+                <a class="nav-link active me-3 fs-5" asp-area="" asp-controller="Home" asp-action="Index" aria-current="page">Home</a>
+            </li>
+            <li class="nav-item me-5 d-flex align-items-center">
+                @if (User.Identity.IsAuthenticated)
+                {
+                    <span class="navbar-text fs-3 me-3">Hello, @User.Identity.Name</span>
+                    <form method="post" asp-area="" asp-controller="Account" asp-action="Logout" class="d-inline">
+                        <button type="submit" class="btn btn-outline-primary btn-lg">Logout</button>
+                    </form>
+                }
+                else
+                {
+                    <a class="btn btn-outline-primary btn-lg" asp-area="" asp-controller="Account" asp-action="Login">Login</a>
+                }
+            </li>
+        </ul>
     </header>
-    <div class="container">
-        <main role="main" class="pb-3">
+
+    <div class="container main-container">
+        <main role="main" class="bg-white p-4 rounded shadow-sm">
             @RenderBody()
         </main>
     </div>
 
-    <footer class="border-top footer text-muted">
+    <!-- Футер -->
+    <footer class="footer border-top">
         <div class="container">
-            &copy; 2025 - UserFactory -
+            <p class="mb-0">© 2025 - UserFactory</p>
         </div>
     </footer>
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+
+    <!-- Скрипты Bootstrap -->
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
+
 </body>
 </html>

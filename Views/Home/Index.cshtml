@@ -1,7 +1,25 @@
 ﻿@{
-    ViewData["Title"] = "Main Page";
+    ViewData["Title"] = "User Management";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
+<div class="container mt-4">
+
+    @if (User.Identity.IsAuthenticated)
+    {
+        <div class="text-center">
+            <h1 class="display-4">Welcome, @User.Identity.Name!</h1>
+            <p>You can manage users with the options below.</p>
+            <a href="/Users/Crud" class="btn btn-primary btn-lg mt-1">Go to User CRUD</a>
+            <a href="/Account/Logout" class="btn btn-secondary btn-lg mt-1 ml-2">Logout</a>
+        </div>
+    }
+    else
+    {
+        <div class="text-center">
+            <h1 class="display-4">Welcome!</h1>
+            <p>Please log in to access user management features.</p>
+            <a href="/Account/Login" class="btn btn-primary btn-lg mt-1">Login</a>
+        </div>
+    }
+
 </div>
