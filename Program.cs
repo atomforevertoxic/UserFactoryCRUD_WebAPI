@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using System;
 using UserFactory.Data;
+using UserFactory.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -19,6 +20,8 @@ builder.Services.AddDbContext<WebDbContext>(options =>
     options.UseInMemoryDatabase("InMemoryDb"));
 
 builder.Services.AddControllersWithViews();
+
+builder.Services.AddTransient<UserService>();
 
 var app = builder.Build();
 

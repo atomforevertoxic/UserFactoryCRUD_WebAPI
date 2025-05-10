@@ -1,8 +1,10 @@
 ﻿using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Threading.Tasks;
 using UserFactory.Data;
 using UserFactory.Models;
+using UserFactory.Services;
 
 namespace UserFactory.Controllers
 {
@@ -10,27 +12,32 @@ namespace UserFactory.Controllers
     [Route("api/[controller]")]
     public class UsersController : Controller
     {
-        private readonly WebDbContext _context;
+        private readonly UserService _userService;
 
-        public UsersController(WebDbContext context)
+        public UsersController(UserService userService)
         {
-            _context = context;
+            _userService = userService;
         }
 
         [HttpGet("list")]
-        public async Task<IActionResult> GetUsers()
+        public IActionResult GetUsers()
         {
-            var users = await _context.Users.ToListAsync();
+            IList<User> users = _userService.GetUsers();
+
+            if (users == null || users.Count == 0)
+            {
+                return NotFound("No users found");
+            }
             return Ok(users);
         }
 
         [HttpGet("{guid}")]
         public async Task<IActionResult> GetUserByGuid(Guid guid)
         {
-            var user = await _context.Users.FindAsync(guid);
+            var user = await _userService.GetUserByGuid(guid);
             if (user==null)
             {
-                return NotFound();
+                return NotFound("No user found");
             }
             return Ok(user);
         }
@@ -42,9 +49,11 @@ namespace UserFactory.Controllers
         }
 
         [HttpPost]
-        public IActionResult Create([FromForm] User user)
+        public async Task<IActionResult> Create([FromForm] User user)
         {
-            return View();
+            string result = await _userService.AddUserAsync(user);
+
+            return RedirectToAction("Index", "Home");
         }
 
 

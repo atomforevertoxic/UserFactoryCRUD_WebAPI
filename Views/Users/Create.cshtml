@@ -7,29 +7,24 @@
 
 <div class="container d-flex justify-content-center w-100" style="max-width: 600px;">
     <form asp-action="Create" method="post" novalidate>
+
         @* Global errors output *@
         <div asp-validation-summary="ModelOnly" class="text-danger mb-4"></div>
 
-        <div class="form-group">
+        <div class="form-group mb-2">
             <label asp-for="Login" class="control-label fw-bold"></label>
             <input asp-for="Login" class="form-control" placeholder="Enter your login" />
             <span asp-validation-for="Login" class="text-danger"></span>
         </div>
 
-        <div class="form-group">
-            <label asp-for="Password" class="control-label fw-bold"></label>
-            <input asp-for="Password" class="form-control" placeholder="Enter your password" />
-            <span asp-validation-for="Password" class="text-danger"></span>
-        </div>
-
-        <div class="form-group">
+        <div class="form-group mb-2">
             <label asp-for="Name" class="control-label fw-bold"></label>
             <input asp-for="Name" class="form-control" placeholder="Enter your name" />
             <span asp-validation-for="Name" class="text-danger"></span>
         </div>
 
-        <div class="form-group">
-            <label for="Gender">Gender</label>
+        <div class="form-group mb-2">
+            <label asp-for="Gender" class="control-label fw-bold"></label>
             <select asp-for="Gender" class="form-control" id="Gender">
                 <option value="">Select gender</option>
                 <option value="0">Male</option>
@@ -39,21 +34,28 @@
             <span asp-validation-for="Gender" class="text-danger"></span>
         </div>
 
-        <div class="form-group">
-            <label for="BirthDate">Birth Date</label>
-            <input asp-for="Birthday" type="date" class="form-control" id="BirthDate" />
+        <div class="form-group mb-2">
+            <label asp-for="Birthday" class="control-label fw-bold"></label>
+            <input asp-for="Birthday" type="date" class="form-control" id="Birthday" />
             <span asp-validation-for="Birthday" class="text-danger"></span>
         </div>
-
-        <div class="form-group form-check">
+            
+        <div class="form-group form-check mb-2">
             <input asp-for="Admin" class="form-check-input" id="IsAdmin" />
-            <label class="form-check-label" for="IsAdmin">Make this user an administrator (Available to admins)</label>
+            <label class="form-check-label" asp-for="Admin">Make this user an administrator (Available to admins)</label>
+        </div>
+
+        <div class="form-group mb-2">
+            <label asp-for="Password" class="control-label fw-bold"></label>
+            <input asp-for="Password" type="password" class="form-control" placeholder="Enter your password" />
+            <span asp-validation-for="Password" class="text-danger"></span>
         </div>
 
         <div class="mt-4 d-flex justify-content-center">
             <button type="submit" class="btn btn-primary">Create User</button>
-            <a href="/Users" class="btn btn-secondary ms-3">Cancel</a>
+            <a asp-controller="Home" asp-action="Index" class="btn btn-secondary ms-3">Cancel</a>
         </div>
+
     </form>
 </div>
 
