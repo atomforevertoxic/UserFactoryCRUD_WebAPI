@@ -17,5 +17,20 @@ namespace UserFactory.Controllers
         {
             return View();
         }
+
+        public IActionResult Create()
+        {
+            return View();
+        }
+
+        public IActionResult Login()
+        {
+            return View();
+        }
+
+        public IActionResult Logout()
+        {
+            return View();
+        }
     }
 }

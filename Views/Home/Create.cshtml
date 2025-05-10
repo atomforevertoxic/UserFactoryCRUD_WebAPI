@@ -1,0 +1,46 @@
+﻿@model UserFactory.Models.User;
+@{
+    ViewData["Title"] = "Create User";
+}
+
+<h1 class="text-center mb-4">Create User</h1>
+
+<div class="container">
+    <form asp-action="Create" method="post">
+        <div class="form-group">
+            <label for="Login">Login</label>
+            <input type="text" class="form-control" id="Login" name="Login" placeholder="Enter login" required />
+        </div>
+        <div class="form-group">
+            <label for="Password">Password</label>
+            <input type="password" class="form-control" id="Password" name="Password" placeholder="Enter password" required />
+        </div>
+        <div class="form-group">
+            <label for="Name">Full Name</label>
+            <input type="text" class="form-control" id="Name" name="Name" placeholder="Enter full name" required />
+        </div>
+        <div class="form-group">
+            <label for="Gender">Gender</label>
+            <select class="form-control" id="Gender" name="Gender" required>
+                <option value="">Select gender</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="BirthDate">Birth Date</label>
+            <input type="date" class="form-control" id="BirthDate" name="BirthDate" required />
+        </div>
+        
+        <div class="form-group form-check">
+            <input type="checkbox" class="form-check-input" id="IsAdmin" name="IsAdmin" />
+            <label class="form-check-label" for="IsAdmin">Make this user an administrator (Available to admins)</label>
+        </div>
+
+        <div class="mt-4 d-flex justify-content-center">
+            <button type="submit" class="btn btn-primary">Create User</button>
+            <a href="/Users" class="btn btn-secondary ml-3">Cancel</a>
+        </div>
+    </form>
+</div>
