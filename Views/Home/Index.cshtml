@@ -1,14 +1,17 @@
-﻿@{
+﻿@model IEnumerable<UserFactory.Models.User>
+@{
     ViewData["Title"] = "User Management";
 }
 
 <div class="container mt-4">
-
     <div class="text-center">
-        @* <h1 class="display-4">Welcome, @User.Identity.Name!</h1> *@
+        <h1 class="display-4">Welcome, @User.Identity.Name!</h1>
         <p>You can manage users with the options below.</p>
-        <a asp-controller="Account" asp-action="Logout" class="btn btn-secondary btn-lg mt-1 ml-2">Logout</a>
-        <a asp-controller="Users" asp-action="Create" class="btn btn-primary btn-lg mt-1">Create</a>
+
+        <div class="text-start mb-3">
+            <a asp-controller="Users" asp-action="Create" class="btn btn-primary btn mt-1">Create new user</a>
+        </div>
+
         @if (Model == null || !Model.Any())
         {
             <p>No users found.</p>
@@ -22,7 +25,7 @@
                         <th>Login</th>
                         <th>Name</th>
                         <th>Gender</th>
-                        <th>Birth Date</th>
+                        <th>Birthday</th>
                         <th>Admin</th>
                         <th>Created On</th>
                         <th>Actions</th>

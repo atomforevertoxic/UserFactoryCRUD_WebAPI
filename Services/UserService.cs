@@ -13,16 +13,16 @@ namespace UserFactory.Services
             _context = context;
         }
 
-        public IList<User> GetUsers()
+        public async Task<IList<User>> GetUsersAsync()
         {
             if (_context.Users != null)
             {
-                return _context.Users.ToList();
+                return await _context.Users.ToListAsync();
             }
             return new List<User>();
         }
 
-        public async Task<User?> GetUserByGuid(Guid guid)
+        public async Task<User?> GetUserByGuidAsync(Guid guid)
         {
             if (_context == null) return null;
             else if (_context.Users == null || _context.Users.Count() == 0) return null;

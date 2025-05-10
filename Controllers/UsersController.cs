@@ -20,9 +20,9 @@ namespace UserFactory.Controllers
         }
 
         [HttpGet("list")]
-        public IActionResult GetUsers()
+        public async Task<IActionResult> GetUsers()
         {
-            IList<User> users = _userService.GetUsers();
+            IList<User> users = await _userService.GetUsersAsync();
 
             if (users == null || users.Count == 0)
             {
@@ -34,7 +34,7 @@ namespace UserFactory.Controllers
         [HttpGet("{guid}")]
         public async Task<IActionResult> GetUserByGuid(Guid guid)
         {
-            var user = await _userService.GetUserByGuid(guid);
+            var user = await _userService.GetUserByGuidAsync(guid);
             if (user==null)
             {
                 return NotFound("No user found");
@@ -51,8 +51,15 @@ namespace UserFactory.Controllers
         [HttpPost]
         public async Task<IActionResult> Create([FromForm] User user)
         {
+
+            if (!ModelState.IsValid) 
+            {
+                return View();
+            }
+
             string result = await _userService.AddUserAsync(user);
 
+            //return Ok(result);
             return RedirectToAction("Index", "Home");
         }
 
