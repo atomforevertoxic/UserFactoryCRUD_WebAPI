@@ -17,7 +17,7 @@ namespace UserFactory.Controllers
             _context = context;
         }
 
-        [HttpGet]
+        [HttpGet("list")]
         public async Task<IActionResult> GetUsers()
         {
             var users = await _context.Users.ToListAsync();
@@ -42,7 +42,7 @@ namespace UserFactory.Controllers
         }
 
         [HttpPost]
-        public IActionResult Create(User user)
+        public IActionResult Create([FromBody] User user)
         {
             return View();
         }
