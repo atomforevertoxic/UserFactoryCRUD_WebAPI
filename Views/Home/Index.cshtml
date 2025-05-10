@@ -4,22 +4,23 @@
 
 <div class="container mt-4">
 
-    @if (User.Identity.IsAuthenticated)
+    <div class="text-center">
+        @* <h1 class="display-4">Welcome, @User.Identity.Name!</h1> *@
+        <p>You can manage users with the options below.</p>
+        <a asp-controller="Home" asp-action="Logout" class="btn btn-secondary btn-lg mt-1 ml-2">Logout</a>
+        <a asp-controller="Home" asp-action="Create" class="btn btn-primary btn-lg mt-1">Create</a>
+    </div>
+@*     @if (User.Identity.IsAuthenticated)
     {
-        <div class="text-center">
-            <h1 class="display-4">Welcome, @User.Identity.Name!</h1>
-            <p>You can manage users with the options below.</p>
-            <a href="/Users/Crud" class="btn btn-primary btn-lg mt-1">Go to User CRUD</a>
-            <a href="/Account/Logout" class="btn btn-secondary btn-lg mt-1 ml-2">Logout</a>
-        </div>
-    }
-    else
+
+    } *@
+@*     else
     {
         <div class="text-center">
             <h1 class="display-4">Welcome!</h1>
             <p>Please log in to access user management features.</p>
-            <a href="/Account/Login" class="btn btn-primary btn-lg mt-1">Login</a>
+            <a asp-controller="Home" asp-action="Login" class="btn btn-primary btn-lg mt-1">Login</a>
         </div>
-    }
+    } *@
 
 </div>

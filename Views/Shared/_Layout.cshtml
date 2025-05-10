@@ -24,13 +24,13 @@
                 @if (User.Identity.IsAuthenticated)
                 {
                     <span class="navbar-text fs-3 me-3">Hello, @User.Identity.Name</span>
-                    <form method="post" asp-area="" asp-controller="Account" asp-action="Logout" class="d-inline">
+                    @* <form method="post" asp-area="" asp-controller="Account" asp-action="Logout" class="d-inline">
                         <button type="submit" class="btn btn-outline-primary btn-lg">Logout</button>
-                    </form>
+                    </form> *@
                 }
                 else
                 {
-                    <a class="btn btn-outline-primary btn-lg" asp-area="" asp-controller="Account" asp-action="Login">Login</a>
+                    @* <a class="btn btn-outline-primary btn-lg" asp-area="" asp-controller="Account" asp-action="Login">Login</a> *@
                 }
             </li>
         </ul>
@@ -42,14 +42,11 @@
         </main>
     </div>
 
-    <!-- Футер -->
     <footer class="footer border-top">
         <div class="container">
             <p class="mb-0">© 2025 - UserFactory</p>
         </div>
     </footer>
-
-    <!-- Скрипты Bootstrap -->
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
     @await RenderSectionAsync("Scripts", required: false)
