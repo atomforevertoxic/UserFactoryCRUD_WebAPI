@@ -1,6 +1,8 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System;
 using UserFactory.Data;
+using UserFactory.Models;
 using UserFactory.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -23,6 +25,16 @@ builder.Services.AddControllersWithViews();
 
 builder.Services.AddTransient<UserService>();
 
+builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
+
+builder.Services.AddAuthentication("MyCookieAuth")
+    .AddCookie("MyCookieAuth", options =>
+    {
+        options.LoginPath = "/Account/Login";
+        options.LogoutPath = "/Account/Logout";
+    });
+
+
 var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())
@@ -34,6 +46,9 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 app.UseRouting();
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 // Swagger launch
 app.UseSwagger(); 
