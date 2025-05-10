@@ -6,7 +6,7 @@ using UserFactory.Models;
 
 namespace UserFactory.Controllers
 {
-    [ApiController]
+    //[ApiController]
     [Route("api/[controller]")]
     public class UsersController : Controller
     {
@@ -42,7 +42,7 @@ namespace UserFactory.Controllers
         }
 
         [HttpPost]
-        public IActionResult Create([FromBody] User user)
+        public IActionResult Create([FromForm] User user)
         {
             return View();
         }

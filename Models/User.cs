@@ -22,15 +22,16 @@ namespace UserFactory.Models
         [StringLength(30, ErrorMessage = "Name cannot be longer than 30 characters")]
         public string Name { get; set; }
 
-        [Range(0, 2)]
-        public int Gender { get; set; }
+        [Required(ErrorMessage = "The Gender field is required.")]
+        public int? Gender { get; set; }
 
+        [DataType(DataType.Date)]
         public DateTime? Birthday { get; set; }
 
         public bool Admin { get; set; }
 
         public DateTime CreatedOn { get; set; } = DateTime.UtcNow;
-        public string CreatedBy { get; set; }
+        public string? CreatedBy { get; set; }
 
         public DateTime? ModifiedOn { get; set; }
         public string? ModifiedBy { get; set; }
