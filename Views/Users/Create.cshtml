@@ -50,7 +50,7 @@
             <input asp-for="Password" type="password" class="form-control" placeholder="Enter your password" />
             <span asp-validation-for="Password" class="text-danger"></span>
         </div>
-
+        @* <a asp-controller="Users" asp-action="Create" class="btn btn-primary">Create User</a> *@
         <div class="mt-4 d-flex justify-content-center">
             <button type="submit" class="btn btn-primary">Create User</button>
             <a asp-controller="Home" asp-action="Index" class="btn btn-secondary ms-3">Cancel</a>
