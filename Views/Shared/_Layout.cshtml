@@ -24,13 +24,13 @@
                 @if (User.Identity.IsAuthenticated)
                 {
                     <span class="navbar-text fs-3 me-3">Hello, @User.Identity.Name</span>
-                    @* <form method="post" asp-area="" asp-controller="Account" asp-action="Logout" class="d-inline">
+                    <form method="post" asp-area="" asp-controller="Account" asp-action="Logout" class="d-inline">
                         <button type="submit" class="btn btn-outline-primary btn-lg">Logout</button>
-                    </form> *@
+                    </form>
                 }
                 else
                 {
-                    @* <a class="btn btn-outline-primary btn-lg" asp-area="" asp-controller="Account" asp-action="Login">Login</a> *@
+                    <a class="btn btn-outline-primary btn-lg" asp-area="" asp-controller="Account" asp-action="Login">Login</a>
                 }
             </li>
         </ul>

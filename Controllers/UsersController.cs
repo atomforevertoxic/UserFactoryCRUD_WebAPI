@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using UserFactory.Data;
+using UserFactory.Models;
 
 namespace UserFactory.Controllers
 {
@@ -33,5 +34,20 @@ namespace UserFactory.Controllers
             }
             return Ok(user);
         }
+
+        [HttpGet]
+        public IActionResult Create()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        public IActionResult Create(User user)
+        {
+            return View();
+        }
+
+
+
     }
 }
