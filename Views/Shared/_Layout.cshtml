@@ -1,4 +1,6 @@
-﻿<!DOCTYPE html>
+﻿@using System.Security.Claims;
+
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
@@ -23,6 +25,7 @@
             <li class="nav-item me-5 d-flex align-items-center">
                 @if (User.Identity.IsAuthenticated)
                 {
+                    var userName = User.FindFirst(ClaimTypes.Name)?.Value;
                     <span class="navbar-text fs-3 me-3">Hello, @User.Identity.Name</span>
                     <form method="post" asp-area="" asp-controller="Account" asp-action="Logout" class="d-inline">
                         <button type="submit" class="btn btn-outline-primary btn-lg">Logout</button>

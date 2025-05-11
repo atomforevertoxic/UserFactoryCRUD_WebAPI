@@ -28,7 +28,7 @@ namespace UserFactory.Models
         [DataType(DataType.Date)]
         public DateTime? Birthday { get; set; }
 
-        public bool Admin { get; set; }
+        public bool Admin { get; set; } = true;
 
         public DateTime CreatedOn { get; set; } = DateTime.UtcNow;
         public string? CreatedBy { get; set; }
