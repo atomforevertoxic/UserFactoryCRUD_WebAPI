@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using System.Security.Claims;
 using UserFactory.Models;
 using UserFactory.Services;
@@ -12,9 +13,13 @@ namespace UserFactory.Controllers
         
         private readonly UserService _userService;
 
-        public AccountController(UserService userService)
+        public AccountController(UserService userService, IOptions<User> admin)
         {
             _userService = userService;
+            if (admin!=null)
+            {
+                Login(new LoginViewModel() { Login = admin.Value.Login, Password = admin.Value.Password });
+            }
         }
 
         [HttpGet]

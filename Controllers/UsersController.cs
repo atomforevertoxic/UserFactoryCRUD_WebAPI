@@ -15,13 +15,9 @@ namespace UserFactory.Controllers
     {
         private readonly UserService _userService;
 
-        public UsersController(UserService userService, IOptions<User> admin)
+        public UsersController(UserService userService)
         {
             _userService = userService;
-            if (admin!=null)
-            {
-                Create(admin.Value);
-            }
         }
 
         [HttpGet("list")]
