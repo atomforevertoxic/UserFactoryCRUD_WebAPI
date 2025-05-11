@@ -34,6 +34,8 @@ builder.Services.AddAuthentication("MyCookieAuth")
         options.LogoutPath = "/Account/Logout";
     });
 
+var configuration = builder.Configuration;
+builder.Services.Configure<User>(configuration.GetSection("DefaultAdminUser"));
 
 var app = builder.Build();
 

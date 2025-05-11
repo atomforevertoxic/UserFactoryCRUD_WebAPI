@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using UserFactory.Data;
 using UserFactory.Models;
 using UserFactory.Services;
+using Microsoft.Extensions.Options;
 
 namespace UserFactory.Controllers
 {
@@ -14,9 +15,13 @@ namespace UserFactory.Controllers
     {
         private readonly UserService _userService;
 
-        public UsersController(UserService userService)
+        public UsersController(UserService userService, IOptions<User> admin)
         {
             _userService = userService;
+            if (admin!=null)
+            {
+                Create(admin.Value);
+            }
         }
 
         [HttpGet("list")]
@@ -59,7 +64,6 @@ namespace UserFactory.Controllers
 
             string result = await _userService.AddUserAsync(user);
 
-            //return Ok(result);
             return RedirectToAction("Index", "Home");
         }
 
