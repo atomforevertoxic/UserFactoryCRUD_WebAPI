@@ -37,6 +37,7 @@ namespace UserFactory.Controllers
         {
             new Claim(ClaimTypes.Name, user.Name),
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new Claim(ClaimTypes.Role, user.Admin.ToString())
         };
 
             var claimsIdentity = new ClaimsIdentity(claims, "MyCookieAuth");
@@ -53,7 +54,7 @@ namespace UserFactory.Controllers
         public async Task<IActionResult> Logout()
         {
             await HttpContext.SignOutAsync("MyCookieAuth");
-            return View();
+            return RedirectToAction("Index", "Home"); ;
         }
 
     }
