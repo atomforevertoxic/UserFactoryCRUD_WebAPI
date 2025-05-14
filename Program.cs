@@ -52,11 +52,7 @@ async Task InitializeAdminAsync(IServiceProvider services)
     var httpContext = httpContextAccessor.HttpContext;
 
     if (defaultAdmin != null)
-    {
-        var passwordHasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher<User>>();
-        
-        defaultAdmin.Password = passwordHasher.HashPassword(defaultAdmin, defaultAdmin.Password);
-        
+    {   
         await userService.AddUserAsync(defaultAdmin);
         
         if (httpContext != null && !httpContext.User.Identity.IsAuthenticated)
