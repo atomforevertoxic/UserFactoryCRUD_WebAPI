@@ -1,69 +1,89 @@
-﻿using Microsoft.AspNetCore.Http.HttpResults;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using System.Threading.Tasks;
-using UserFactory.Data;
 using UserFactory.Models;
 using UserFactory.Services;
-using Microsoft.Extensions.Options;
 
-namespace UserFactory.Controllers
+[ApiController]
+[Route("api/[controller]")]
+[Produces("application/json")]
+public class UsersController : ControllerBase
 {
-    //[ApiController]
-    [Route("api/[controller]")]
-    public class UsersController : Controller
+    private readonly UserService _userService;
+    private readonly ILogger<UsersController> _logger;
+
+    public UsersController(UserService userService, ILogger<UsersController> logger)
     {
-        private readonly UserService _userService;
+        _userService = userService;
+        _logger = logger;
+    }
 
-        public UsersController(UserService userService)
+    [HttpGet]
+    public async Task<ActionResult<IEnumerable<User>>> GetAllUsers()
+    {
+        try
         {
-            _userService = userService;
-        }
-
-        [HttpGet("list")]
-        public async Task<IActionResult> GetUsers()
-        {
-            IList<User> users = await _userService.GetUsersAsync();
-
-            if (users == null || users.Count == 0)
-            {
-                return NotFound("No users found");
-            }
+            var users = await _userService.GetUsersAsync();
             return Ok(users);
         }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting users");
+            return StatusCode(500, "Internal server error");
+        }
+    }
 
-        [HttpGet("{guid}")]
-        public async Task<IActionResult> GetUserByGuid(Guid guid)
+    [HttpGet("active")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult<IEnumerable<User>>> GetActiveUsers()
+    {
+        try
+        {
+            var users = await _userService.GetActiveUsers();
+            return Ok(users);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting active users");
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+    [HttpGet("{guid}")]
+    public async Task<ActionResult<User>> GetUser(Guid guid)
+    {
+        try
         {
             var user = await _userService.GetUserByGuidAsync(guid);
-            if (user==null)
+            if (user == null)
             {
-                return NotFound("No user found");
+                return NotFound();
             }
             return Ok(user);
         }
-
-        [HttpGet]
-        public IActionResult Create()
+        catch (Exception ex)
         {
-            return View();
+            _logger.LogError(ex, $"Error getting user with GUID: {guid}");
+            return StatusCode(500, "Internal server error");
         }
+    }
 
-        [HttpPost]
-        public async Task<IActionResult> Create([FromForm] User user)
+    [HttpPost]
+    public async Task<IActionResult> CreateUser([FromBody] User user)
+    {
+        try
         {
-
-            if (!ModelState.IsValid) 
+            if (!ModelState.IsValid)
             {
-                return View();
+                return BadRequest(ModelState);
             }
 
-            string result = await _userService.AddUserAsync(user);
-
-            return RedirectToAction("Index", "Home");
+            var result = await _userService.AddUserAsync(user);
+            return CreatedAtAction(nameof(GetUser), new { guid = user.Id }, user);
         }
-
-
-
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating user");
+            return StatusCode(500, "Internal server error");
+        }
     }
 }

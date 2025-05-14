@@ -42,7 +42,7 @@ namespace UserFactory.Controllers
         {
             new Claim(ClaimTypes.Name, user.Name),
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new Claim(ClaimTypes.Role, user.Admin.ToString())
+            new Claim(ClaimTypes.Role, user.Admin?"Admin" : "")
         };
 
             var claimsIdentity = new ClaimsIdentity(claims, "MyCookieAuth");
