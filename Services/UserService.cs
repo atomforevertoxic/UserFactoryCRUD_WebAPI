@@ -25,6 +25,18 @@ namespace UserFactory.Services
             return new List<User>();
         }
 
+        public async Task<IList<User>> GetActiveUsers()
+        {
+            if (_context.Users!=null)
+            {
+                return await _context.Users
+                    .Where(u => u.RevokedOn == null)
+                    .OrderBy(u => u.CreatedOn)
+                    .ToListAsync();
+            }
+            return new List<User>();
+        }
+
         public async Task<User?> GetUserByGuidAsync(Guid guid)
         {
             if (_context == null) return null;
