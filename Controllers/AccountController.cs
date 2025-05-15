@@ -13,48 +13,37 @@ namespace UserFactory.Controllers
     [Route("api/[controller]")]
     public class AccountController : ControllerBase
     {
-        private readonly UserService _userService;
+        private readonly AccountService _accountService;
 
-        public AccountController( UserService userService)
+        public AccountController(AccountService accountService)
         {
-            _userService = userService;
+            _accountService = accountService;
         }
 
         [HttpPost("login")]
         [AllowAnonymous]
         public async Task<ActionResult> Login(LoginViewModel model)
         {
-            var user = await _userService.AuthenticateUserAsync(model);
-            if (user == null)
+            var (claimsIdentity, user) = await _accountService.AuthenticateAsync(model);
+            if (claimsIdentity == null)
             {
                 return Unauthorized(new { message = "Invalid login or password" });
             }
-
-            var claims = new List<Claim>
-            {
-                new Claim("Guid", user.Id.ToString()),
-                new Claim(ClaimTypes.Name, user.Login),
-                new Claim(ClaimTypes.Role, user.Admin?"Admin": "User")
-            };
-
-            var claimsIdentity = new ClaimsIdentity(
-                claims,
-                CookieAuthenticationDefaults.AuthenticationScheme);
 
             await HttpContext.SignInAsync(
                 CookieAuthenticationDefaults.AuthenticationScheme,
                 new ClaimsPrincipal(claimsIdentity),
                 new AuthenticationProperties
                 {
-                    IsPersistent = false, // No "remember me"
-                    ExpiresUtc = DateTimeOffset.UtcNow.AddDays(1) 
+                    IsPersistent = false,
+                    ExpiresUtc = DateTimeOffset.UtcNow.AddDays(1)
                 });
 
-            return Ok(new { message = "Login successful", user});
+            return Ok(new { message = "Login successful", user });
         }
 
         [HttpPost("logout")]
-        [Authorize]
+        [Authorize] //needs error message!
         public async Task<IActionResult> Logout()
         {
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
@@ -63,17 +52,10 @@ namespace UserFactory.Controllers
 
         [HttpGet("current-user")]
         [Authorize]
-        public async  Task<IActionResult> GetCurrentUser()
+        public async Task<IActionResult> GetCurrentUser()
         {
-            var userIdClaim = User.FindFirst("Guid");
-            if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
-            {
-                return Unauthorized("User ID not found");
-            }
-
-            var user = await _userService.GetByGuidAsync(userId);
-
-            return Ok(user);
+            var user = await _accountService.GetCurrentUserAsync(User);
+            return user != null ? Ok(user) : Unauthorized();
         }
     }
 }

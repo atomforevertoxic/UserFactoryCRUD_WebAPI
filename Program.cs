@@ -28,6 +28,7 @@ builder.Services.AddControllersWithViews();
 
 
 builder.Services.AddTransient<UserService>();
+builder.Services.AddTransient<AccountService>();
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 
 

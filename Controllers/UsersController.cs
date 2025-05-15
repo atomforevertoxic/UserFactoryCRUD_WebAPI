@@ -11,12 +11,14 @@ using UserFactory.Services;
 public class UsersController : ControllerBase
 {
     private readonly UserService _userService;
+    private readonly AccountService _accountService;
     private readonly User _defaultAdmin;
     private readonly ILogger<UsersController> _logger;
 
-    public UsersController(UserService userService, ILogger<UsersController> logger, IOptions<User> admin)
+    public UsersController(UserService userService, AccountService accountService,ILogger<UsersController> logger, IOptions<User> admin)
     {
         _userService = userService;
+        _accountService = accountService;
         _logger = logger;
         _defaultAdmin = admin.Value;
     }
@@ -71,20 +73,36 @@ public class UsersController : ControllerBase
     [Authorize]
     public async Task<IActionResult> Create([FromBody] User user)
     {
-        if (!ModelState.IsValid) return BadRequest();
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
 
         try
-        {
+        {   
+            var currentUser = await _accountService.GetCurrentUserAsync(User);
+            if (currentUser == null)
+            {
+                return Unauthorized("Current user not found");
+            }
+
+            user.CreatedBy = currentUser.Name;
+            user.CreatedOn = DateTime.UtcNow;
+            user.Id = Guid.NewGuid();
+
             await _userService.AddUserAsync(user);
+
             return CreatedAtAction(nameof(GetById), new { id = user.Id }, user);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error user creating ");
-            return StatusCode(500, "Internal server error");
+            _logger.LogError(ex, "Error creating user. User: {@User}", user);
+            return StatusCode(500, "Failed to create user");
         }
     }
 
+
+ 
     [HttpPost("init-default-admin")]
     [AllowAnonymous]
     public async Task<IActionResult> CreateDefaultAdmin()
