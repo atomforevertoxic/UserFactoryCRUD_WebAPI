@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
+using System;
 using UserFactory.Models;
 using UserFactory.Services;
 
@@ -9,37 +11,54 @@ using UserFactory.Services;
 public class UsersController : ControllerBase
 {
     private readonly UserService _userService;
+    private readonly User _defaultAdmin;
     private readonly ILogger<UsersController> _logger;
 
-    public UsersController(UserService userService, ILogger<UsersController> logger)
+    public UsersController(UserService userService, ILogger<UsersController> logger, IOptions<User> admin)
     {
         _userService = userService;
         _logger = logger;
+        _defaultAdmin = admin.Value;
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<User>>> GetAllUsers()
+    [Authorize]
+    public async Task<ActionResult<IEnumerable<User>>> GetAll()
     {
         try
         {
-            var users = await _userService.GetUsersAsync();
-            return Ok(users);
+            return Ok(await _userService.GetUsersAsync());
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting users");
+            _logger.LogError(ex, "GetAll error");
+            return StatusCode(500);
+        }
+    }
+
+    [HttpGet("{id:guid}")]
+    [AllowAnonymous]
+    public async Task<ActionResult<User>> GetById(Guid id)
+    {
+        try
+        {
+            var user = await _userService.GetByGuidAsync(id);
+            return user != null ? Ok(user) : NotFound();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error getting user with GUID: {id}");
             return StatusCode(500, "Internal server error");
         }
     }
 
     [HttpGet("active")]
     [Authorize(Roles = "Admin")]
-    public async Task<ActionResult<IEnumerable<User>>> GetActiveUsers()
+    public async Task<ActionResult<IEnumerable<User>>> GetActive()
     {
         try
         {
-            var users = await _userService.GetActiveUsers();
-            return Ok(users);
+            return Ok(await _userService.GetActiveUsers());
         }
         catch (Exception ex)
         {
@@ -48,42 +67,53 @@ public class UsersController : ControllerBase
         }
     }
 
-    [HttpGet("{guid}")]
-    public async Task<ActionResult<User>> GetUser(Guid guid)
+    [HttpPost]
+    [Authorize]
+    public async Task<IActionResult> Create([FromBody] User user)
     {
+        if (!ModelState.IsValid) return BadRequest();
+
         try
         {
-            var user = await _userService.GetUserByGuidAsync(guid);
-            if (user == null)
-            {
-                return NotFound();
-            }
-            return Ok(user);
+            await _userService.AddUserAsync(user);
+            return CreatedAtAction(nameof(GetById), new { id = user.Id }, user);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, $"Error getting user with GUID: {guid}");
+            _logger.LogError(ex, "Error user creating ");
             return StatusCode(500, "Internal server error");
         }
     }
 
-    [HttpPost]
-    public async Task<IActionResult> CreateUser([FromBody] User user)
+    [HttpPost("init-default-admin")]
+    [AllowAnonymous]
+    public async Task<IActionResult> CreateDefaultAdmin()
     {
         try
         {
-            if (!ModelState.IsValid)
+            var existingAdmin = await _userService.GetUserByLoginAsync(_defaultAdmin.Login);
+            if (existingAdmin != null)
             {
-                return BadRequest(ModelState);
+                return Conflict("Admin user already exists");
             }
 
-            var result = await _userService.AddUserAsync(user);
-            return CreatedAtAction(nameof(GetUser), new { guid = user.Id }, user);
+            await _userService.AddUserAsync(_defaultAdmin);
+
+            return CreatedAtAction(
+                nameof(GetById),
+                new { id = _defaultAdmin.Id },
+                new
+                {
+                    _defaultAdmin.Id,
+                    _defaultAdmin.Login,
+                    _defaultAdmin.Name,
+                    _defaultAdmin.Admin
+                });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error creating user");
-            return StatusCode(500, "Internal server error");
+            _logger.LogError(ex, "Admin initialization failed");
+            return StatusCode(500, "Failed to initialize admin user");
         }
     }
 }

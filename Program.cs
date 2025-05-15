@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
@@ -13,7 +14,8 @@ builder.Services.AddSwaggerGen(c =>
     c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
     {
         Title = "My API",
-        Version = "v1"
+        Version = "v1",
+        Description = "Default admin| Login: Admin, Password: AdminPass123\nCreate admin by api before login like administrator"
     });
 });
 
@@ -38,39 +40,22 @@ builder.Services.AddAuthentication("MyCookieAuth")
         options.LogoutPath = "/Account/Logout";
     });
 
-var configuration = builder.Configuration;
-var defaultAdmin = configuration.GetSection("DefaultAdminUser").Get<User>();
+builder.Services.Configure<User>(builder.Configuration.GetSection("DefaultAdminUser"));
+
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.Cookie.HttpOnly = true; 
+        options.Cookie.SecurePolicy = CookieSecurePolicy.Always; 
+        options.Cookie.SameSite = SameSiteMode.Strict; 
+        options.LoginPath = "/api/account/login"; 
+        options.LogoutPath = "/api/account/logout"; 
+        options.ExpireTimeSpan = TimeSpan.FromDays(1);
+    });
+
+builder.Services.AddAuthorization();
 
 var app = builder.Build();
-
-async Task InitializeAdminAsync(IServiceProvider services)
-{
-    using var scope = services.CreateScope();
-    var userService = scope.ServiceProvider.GetRequiredService<UserService>();
-    var context = scope.ServiceProvider.GetRequiredService<WebDbContext>();
-    var httpContextAccessor = scope.ServiceProvider.GetRequiredService<IHttpContextAccessor>();
-    var httpContext = httpContextAccessor.HttpContext;
-
-    if (defaultAdmin != null)
-    {   
-        await userService.AddUserAsync(defaultAdmin);
-        
-        if (httpContext != null && !httpContext.User.Identity.IsAuthenticated)
-        {
-            var claims = new List<Claim>
-            {
-                new Claim(ClaimTypes.Name, defaultAdmin.Name),
-                new Claim(ClaimTypes.NameIdentifier, defaultAdmin.Id.ToString()),
-                new Claim(ClaimTypes.Role, defaultAdmin.Admin.ToString())
-            };
-            var claimsIdentity = new ClaimsIdentity(claims, "MyCookieAuth");
-            var claimsPrincipal = new ClaimsPrincipal(claimsIdentity);
-            await httpContext.SignInAsync("MyCookieAuth", claimsPrincipal);
-        }
-    }
-}
-
-await InitializeAdminAsync(app.Services);
 
 if (!app.Environment.IsDevelopment())
 {

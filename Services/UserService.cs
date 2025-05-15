@@ -37,7 +37,7 @@ namespace UserFactory.Services
             return new List<User>();
         }
 
-        public async Task<User?> GetUserByGuidAsync(Guid guid)
+        public async Task<User?> GetByGuidAsync(Guid guid)
         {
             if (_context == null) return null;
             else if (_context.Users == null || _context.Users.Count() == 0) return null;
@@ -82,7 +82,7 @@ namespace UserFactory.Services
 
             if (VerifyPassword(user, user.Password, model.Password))
             {
-                return user; // Аутентификация успешна
+                return user;
             }
 
             return null;

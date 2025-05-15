@@ -1,4 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using System.Security.Claims;
@@ -7,60 +9,71 @@ using UserFactory.Services;
 
 namespace UserFactory.Controllers
 {
-
-    public class AccountController : Controller
+    [ApiController]
+    [Route("api/[controller]")]
+    public class AccountController : ControllerBase
     {
-        
         private readonly UserService _userService;
 
-        public AccountController(UserService userService, IOptions<User> admin)
+        public AccountController( UserService userService)
         {
             _userService = userService;
-            if (admin!=null)
-            {
-                Login(new LoginViewModel() { Login = admin.Value.Login, Password = admin.Value.Password });
-            }
         }
 
-        [HttpGet]
-        public IActionResult Login()
-        {
-            return View();
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> Login(LoginViewModel model)
+        [HttpPost("login")]
+        [AllowAnonymous]
+        public async Task<ActionResult> Login(LoginViewModel model)
         {
             var user = await _userService.AuthenticateUserAsync(model);
             if (user == null)
             {
-                ModelState.AddModelError("", "Invalid login or password");
-                return View();
+                return Unauthorized(new { message = "Invalid login or password" });
             }
 
             var claims = new List<Claim>
-        {
-            new Claim(ClaimTypes.Name, user.Name),
-            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new Claim(ClaimTypes.Role, user.Admin?"Admin" : "")
-        };
-
-            var claimsIdentity = new ClaimsIdentity(claims, "MyCookieAuth");
-            var authProperties = new AuthenticationProperties
             {
-                IsPersistent = true
+                new Claim("Guid", user.Id.ToString()),
+                new Claim(ClaimTypes.Name, user.Login),
+                new Claim(ClaimTypes.Role, user.Admin?"Admin": "User")
             };
 
-            await HttpContext.SignInAsync("MyCookieAuth", new ClaimsPrincipal(claimsIdentity), authProperties);
-            return RedirectToAction("Index", "Home");
+            var claimsIdentity = new ClaimsIdentity(
+                claims,
+                CookieAuthenticationDefaults.AuthenticationScheme);
+
+            await HttpContext.SignInAsync(
+                CookieAuthenticationDefaults.AuthenticationScheme,
+                new ClaimsPrincipal(claimsIdentity),
+                new AuthenticationProperties
+                {
+                    IsPersistent = false, // No "remember me"
+                    ExpiresUtc = DateTimeOffset.UtcNow.AddDays(1) 
+                });
+
+            return Ok(new { message = "Login successful", user});
         }
 
-        [HttpPost]
+        [HttpPost("logout")]
+        [Authorize]
         public async Task<IActionResult> Logout()
         {
-            await HttpContext.SignOutAsync("MyCookieAuth");
-            return RedirectToAction("Index", "Home"); ;
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            return Ok(new { message = "Logout successful" });
         }
 
+        [HttpGet("current-user")]
+        [Authorize]
+        public async  Task<IActionResult> GetCurrentUser()
+        {
+            var userIdClaim = User.FindFirst("Guid");
+            if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
+            {
+                return Unauthorized("User ID not found");
+            }
+
+            var user = await _userService.GetByGuidAsync(userId);
+
+            return Ok(user);
+        }
     }
 }
