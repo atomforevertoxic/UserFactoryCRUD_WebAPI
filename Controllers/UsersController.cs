@@ -161,11 +161,17 @@ public class UsersController : ControllerBase
                 return Unauthorized("Current user not found");
             }
 
+            if (_userService.GetUserByLoginAsync(user.Login)!=null)
+            {
+                return Conflict($"A user with login '{user.Login}' already exists.");
+            }
+
+
             user.CreatedBy = currentUser.Name;
             user.CreatedOn = DateTime.UtcNow;
             user.Id = Guid.NewGuid();
 
-            await _userService.AddUserAsync(user);
+            _userService.AddUserAsync(user);
 
             return CreatedAtAction(nameof(GetById), new { id = user.Id }, user);
         }
@@ -190,7 +196,7 @@ public class UsersController : ControllerBase
                 return Conflict("Admin user already exists");
             }
 
-            await _userService.AddUserAsync(_defaultAdmin);
+            _userService.AddUserAsync(_defaultAdmin);
 
             return CreatedAtAction(
                 nameof(GetById),

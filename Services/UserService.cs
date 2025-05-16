@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using System.Runtime.CompilerServices;
 using UserFactory.Data;
 using UserFactory.Models;
 
@@ -45,31 +46,12 @@ namespace UserFactory.Services
             return await _context.Users.FindAsync(guid);
         }
 
-        public async Task<string> AddUserAsync(User user)
+        public async void AddUserAsync(User user)
         {
-            if (_context != null && _context.Users != null)
-            {
-                if (await _context.Users.AnyAsync(u => u.Login == user.Login))
-                {
-                    return "Duplicate";
-                }
+            user.Password = _passwordHasher.HashPassword(user, user.Password);
 
-                try
-                {
-                    user.Password = _passwordHasher.HashPassword(user, user.Password);
-
-                    await _context.Users.AddAsync(user);
-                    await _context.SaveChangesAsync();
-                }
-                catch (Exception ex)
-                {
-                    return ex.Message;
-                }
-
-                return "Success";
-            }
-
-            return "Database access error";
+            await _context.Users.AddAsync(user);
+            await _context.SaveChangesAsync();
         }
 
         public async Task<User> AuthenticateUserAsync(LoginViewModel model)
