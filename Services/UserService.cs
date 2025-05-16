@@ -98,5 +98,12 @@ namespace UserFactory.Services
             var result = _passwordHasher.VerifyHashedPassword(user, hashedPassword, providedPassword);
             return result == PasswordVerificationResult.Success;
         }
+
+        public async Task<List<User>> GetUsersBornBeforeAsync(DateTime cutoffDate)
+        {
+            return await _context.Users
+                .Where(u => u.Birthday != null && u.Birthday <= cutoffDate)
+                .ToListAsync();
+        }
     }
 }

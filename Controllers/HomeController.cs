@@ -16,12 +16,5 @@ namespace UserFactory.Controllers
             _logger = logger;
             _userService = userService;
         }
-
-        [HttpGet]
-        public async Task<IActionResult> Index()
-        {
-            var users = await _userService.GetUsersAsync();
-            return View(users);
-        }
     }
 }

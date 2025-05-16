@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using System;
@@ -69,6 +70,80 @@ public class UsersController : ControllerBase
         }
     }
 
+    [HttpGet("by-login/{login}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<ActionResult<User>> GetUserByLogin(string login)
+    {
+        try
+        {
+            User user = await _userService.GetUserByLoginAsync(login);
+            if (user==null)
+            {
+                _logger.LogError("Non-existent login");
+                return NotFound($"There is no user with this login: {login}");
+            }
+            return Ok(new ResponseUser
+            {
+                Name = user.Name,
+                Gender = user.Gender,
+                Birthday = user.Birthday,
+                IsActive = user.RevokedOn == null ? true : false
+            });
+        }
+        catch(Exception ex)
+        {
+            _logger.LogError(ex, $"Error retrieving user by login {login} ");
+            return StatusCode(500, $"Failed to find user by login: {login}");
+        }
+    }
+
+    [HttpPost("get-by-credentials")] // Post a request so that the information is passed in the body of the request
+    [Authorize]
+    public async Task<ActionResult<ResponseUser>> GetUserByCredentials([FromBody] LoginViewModel model)
+    {
+        try
+        {
+            // 1. User authorization
+            var user = await _userService.AuthenticateUserAsync(model);
+            if (user == null)
+            {
+                _logger.LogWarning($"Invalid credentials for login: {model.Login}");
+                return Unauthorized(new { Message = "Invalid login or password" });
+            }
+
+            // 2. User activity checking
+            if (user.RevokedOn != null)
+            {
+                _logger.LogWarning($"Attempt to access revoked account: {model.Login}");
+                return Forbid("Account is deactivated");
+            }
+            return Ok(user);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error during credentials check for login: {model.Login}");
+            return StatusCode(500, new { Message = "Internal server error" });
+        }
+    }
+
+    [HttpGet("older-than")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> GetUsersOlderThan([FromQuery] int age)
+    {
+        try
+        {
+            var cutoffDate = DateTime.Today.AddYears(-age);
+            var users = await _userService.GetUsersBornBeforeAsync(cutoffDate);
+
+            return Ok(users);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error fetching users older than {age}");
+            return StatusCode(500);
+        }
+    }
+
     [HttpPost]
     [Authorize]
     public async Task<IActionResult> Create([FromBody] User user)
@@ -96,7 +171,7 @@ public class UsersController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error creating user. User: {@User}", user);
+            _logger.LogError(ex, $"Error creating user. User: {user}");
             return StatusCode(500, "Failed to create user");
         }
     }
