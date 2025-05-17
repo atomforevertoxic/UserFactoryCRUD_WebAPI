@@ -16,7 +16,7 @@ public class UsersController : ControllerBase
     private readonly User _defaultAdmin;
     private readonly ILogger<UsersController> _logger;
 
-    public UsersController(UserService userService, AccountService accountService,ILogger<UsersController> logger, IOptions<User> admin)
+    public UsersController(UserService userService, AccountService accountService, ILogger<UsersController> logger, IOptions<User> admin)
     {
         _userService = userService;
         _accountService = accountService;
@@ -77,7 +77,7 @@ public class UsersController : ControllerBase
         try
         {
             User? user = _userService.GetUserByLogin(login);
-            if (user==null)
+            if (user == null)
             {
                 _logger.LogError("Non-existent login");
                 return NotFound($"There is no user with this login: {login}");
@@ -90,7 +90,7 @@ public class UsersController : ControllerBase
                 IsActive = user.RevokedOn == null ? true : false
             });
         }
-        catch(Exception ex)
+        catch (Exception ex)
         {
             _logger.LogError(ex, $"Error retrieving user by login {login} ");
             return StatusCode(500, $"Failed to find user by login: {login}");
@@ -154,7 +154,7 @@ public class UsersController : ControllerBase
         }
 
         try
-        {   
+        {
             var currentUser = await _accountService.GetCurrentUserAsync(User);
             if (currentUser == null)
             {
@@ -163,7 +163,7 @@ public class UsersController : ControllerBase
 
             var duplicate = _userService.GetUserByLogin(user.Login);
 
-            if (duplicate!=null)
+            if (duplicate != null)
             {
                 return Conflict($"A user with login '{user.Login}' already exists {duplicate}");
             }
@@ -185,7 +185,7 @@ public class UsersController : ControllerBase
     }
 
 
- 
+
     [HttpPost("init-default-admin")]
     [AllowAnonymous]
     public async Task<IActionResult> CreateDefaultAdmin()
@@ -229,7 +229,7 @@ public class UsersController : ControllerBase
             if (currentAdmin.Login.Equals(login, StringComparison.OrdinalIgnoreCase))
             {
                 _logger.LogWarning($"Admin {currentAdmin.Login} attempted to self-delete");
-                return BadRequest(new { Message = "Admin cannot self-delete" });
+                return BadRequest(new { Message = "Admin cannot delete himself" });
             }
 
             var deletingUser = _userService.GetUserByLogin(login);
@@ -273,12 +273,12 @@ public class UsersController : ControllerBase
             if (currentAdmin.Login.Equals(login, StringComparison.OrdinalIgnoreCase))
             {
                 _logger.LogWarning($"Admin {currentAdmin.Login} attempted to self-delete");
-                return BadRequest(new { Message = "Admin cannot self-delete" });
+                return BadRequest(new { Message = "Admin cannot delete himself" });
             }
 
 
             var userExists = _userService.GetUserByLogin(login);
-            if (userExists==null)
+            if (userExists == null)
             {
                 _logger.LogWarning($"Attempt to delete non-existent user: {login}");
                 return NotFound(new { Message = $"User with login '{login}' not found" });
@@ -293,6 +293,55 @@ public class UsersController : ControllerBase
         {
             _logger.LogError(ex, $"Error during full-delete of user {login}");
             return StatusCode(500, new { Message = "Internal server error during deletion" });
+        }
+    }
+
+
+    [HttpPatch("{login}/restore")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> RestoreUser(string login)
+    {
+        try
+        {
+            
+            var currentAdmin = await _accountService.GetCurrentUserAsync(User);
+
+            
+            var userToRestore = _userService.GetUserByLogin(login);
+            if (userToRestore == null)
+            {
+                _logger.LogWarning($"Restore attempt for non-existent user: {login}");
+                return NotFound(new { Message = $"User '{login}' not found" });
+            }
+
+            if (userToRestore.RevokedOn == null)
+            {
+                _logger.LogWarning($"Restore attempt for active user: {login}");
+                return BadRequest(new { Message = $"User '{login}' is not soft-deleted" });
+            }
+
+            
+            var restoredUser = await _userService.RestoreUserAsync(login, currentAdmin.Name);
+
+            _logger.LogInformation($"User {login} restored by {currentAdmin.Login}");
+
+            return Ok(new
+            {
+                Message = $"User '{login}' successfully restored",
+                RestoredBy = currentAdmin.Login,
+                RestoredAt = DateTime.UtcNow,
+                User = new
+                {
+                    restoredUser.Login,
+                    restoredUser.Name,
+                    restoredUser.Admin
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error restoring user {login}");
+            return StatusCode(500, new { Message = "Internal server error during restoration" });
         }
     }
 }

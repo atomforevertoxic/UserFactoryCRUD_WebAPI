@@ -114,5 +114,19 @@ namespace UserFactory.Services
             await _context.SaveChangesAsync();
         }
 
+        public async Task<User> RestoreUserAsync(string login, string restoredBy)
+        {
+            var user = await _context.Users
+                .FirstOrDefaultAsync(u => u.Login == login && u.RevokedOn != null)
+                ?? throw new InvalidOperationException($"Deleted user '{login}' not found");
+
+            user.RevokedOn = null;
+            user.RevokedBy = null;
+            user.ModifiedBy = restoredBy;
+            user.ModifiedOn = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return user;
+        }
     }
 }
