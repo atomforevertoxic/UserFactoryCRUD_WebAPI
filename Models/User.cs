@@ -23,6 +23,7 @@ namespace UserFactory.Models
         public string Name { get; set; } = default!;
 
         [Required(ErrorMessage = "The Gender field is required.")]
+        [Range(0, 2)]
         public int? Gender { get; set; }
 
         [DataType(DataType.Date)]

@@ -29,25 +29,24 @@ namespace UserFactory.Services
             return modifyingUser;
         }
 
-        public async Task ChangePasswordAsync(User modifyingUser, string newPassword, string modifiedBy)
+        public async Task<User?> ChangePasswordAsync(User modifyingUser, string newPassword, string modifiedBy)
         {
             modifyingUser.Password = _passwordHasher.HashPassword(modifyingUser, newPassword);
             modifyingUser.ModifiedBy = modifiedBy;
             modifyingUser.ModifiedOn = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
+            return modifyingUser;
         }
 
-        public async Task<User> ChangeLoginAsync( string oldLogin, string newLogin, string modifiedBy)
+        public async Task<User> ChangeLoginAsync( User modifyingUser, string newLogin, string modifiedBy)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Login == oldLogin);
-
-            user.Login = newLogin;
-            user.ModifiedBy = modifiedBy;
-            user.ModifiedOn = DateTime.UtcNow;
+            modifyingUser.Login = newLogin;
+            modifyingUser.ModifiedBy = modifiedBy;
+            modifyingUser.ModifiedOn = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
-            return user;
+            return modifyingUser;
         }
 
         public bool LoginExistsAsync(string login)

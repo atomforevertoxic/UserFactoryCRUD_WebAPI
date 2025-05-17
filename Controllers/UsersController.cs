@@ -24,6 +24,23 @@ public class UsersController : ControllerBase
         _defaultAdmin = admin.Value;
     }
 
+    [HttpGet("full-list")]
+    [Authorize]
+    public async Task<ActionResult<IList<User>>> GetAll()
+    {
+        try
+        {
+            return Ok(await _userService.GetUsersAsync());
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting all users");
+            return StatusCode(500, "Internal server error");
+        }
+    }
+
+
+
     [HttpPost("init-default-admin")]
     [AllowAnonymous]
     public IActionResult CreateDefaultAdmin()
@@ -85,7 +102,7 @@ public class UsersController : ControllerBase
 
             _userService.AddUserAsync(user);
 
-            return CreatedAtAction(nameof(Create), new { id = user.Id }, user);
+            return CreatedAtAction(nameof(Create), user.Login);
         }
         catch (Exception ex)
         {
@@ -116,7 +133,13 @@ public class UsersController : ControllerBase
 
             var updatedUser = await _userService.UpdateUserProfileAsync( targetUser, request, currentUser.Login);
 
-            return Ok(updatedUser);
+            return Ok(new UserProfileResponse
+                    (
+                        name: updatedUser.Name,
+                        gender: updatedUser.Gender,
+                        birthday: updatedUser.Birthday,
+                        isActive: updatedUser.RevokedOn == null
+                    ));
         }
         catch (Exception ex)
         {
@@ -151,9 +174,13 @@ public class UsersController : ControllerBase
             var validationError = ValidateUserAccess(currentUser, targetUser);
             if (validationError != null) return validationError;
 
-            await _userService.ChangePasswordAsync(targetUser, request.NewPassword, currentUser.Login);
+            var updatedUser = await _userService.ChangePasswordAsync(targetUser, request.NewPassword, currentUser.Login);
 
-            return Ok(new { Message = "Password changed successfully" });
+            return Ok(new { 
+                Message = "Password changed successfully",
+                ModifiedOn = updatedUser.ModifiedOn,
+                ModifiedBy = updatedUser.ModifiedBy
+            });
         }
         catch (Exception ex)
         {
@@ -178,13 +205,15 @@ public class UsersController : ControllerBase
             if (_userService.LoginExistsAsync(request.NewLogin))
                 return Conflict(new { Message = $"Login '{request.NewLogin}' already taken" });
 
-            var updatedUser = await _userService.ChangeLoginAsync(login, request.NewLogin, currentUser.Login);
+            var updatedUser = await _userService.ChangeLoginAsync(targetUser, request.NewLogin, currentUser.Login);
 
             return Ok(new
             {
                 Message = "Login changed successfully",
                 OldLogin = login,
-                NewLogin = updatedUser.Login
+                NewLogin = updatedUser.Login,
+                ModifiedOn = updatedUser.ModifiedOn,
+                ModifiedBy = updatedUser.ModifiedBy
             });
         }
         catch (Exception ex)
@@ -200,7 +229,15 @@ public class UsersController : ControllerBase
     {
         try
         {
-            return Ok(await _userService.GetActiveUsers());
+            var activeUsers = await _userService.GetActiveUsers();
+            var response = activeUsers.Select(u => new UserProfileResponse(
+                name: u.Name,
+                gender: u.Gender,
+                birthday: u.Birthday,
+                isActive: u.RevokedOn == null
+            ));
+            
+            return Ok(response);
         }
         catch (Exception ex)
         {
@@ -221,13 +258,15 @@ public class UsersController : ControllerBase
                 _logger.LogError("Non-existent login");
                 return NotFound($"There is no user with this login: {login}");
             }
-            return Ok(new ResponseUser
-            {
-                Name = user.Name,
-                Gender = user.Gender,
-                Birthday = user.Birthday,
-                IsActive = user.RevokedOn == null ? true : false
-            });
+            
+            return Ok(new UserProfileResponse
+            (
+                name: user.Name,
+                gender: user.Gender,
+                birthday: user.Birthday,
+                isActive: user.RevokedOn == null
+            ));
+
         }
         catch (Exception ex)
         {
@@ -238,11 +277,11 @@ public class UsersController : ControllerBase
 
     [HttpPost("by-credentials")] // Post a request so that the information is passed in the body of the request
     [Authorize]
-    public async Task<ActionResult<ResponseUser>> GetUserByCredentials([FromBody] LoginViewModel model)
+    public async Task<ActionResult<UserProfileResponse>> GetUserByCredentials([FromBody] LoginViewModel model)
     {
         try
         {
-            // 1. User authorization
+            
             var user = await _userService.AuthenticateUserAsync(model);
             if (user == null)
             {
@@ -250,13 +289,20 @@ public class UsersController : ControllerBase
                 return Unauthorized(new { Message = "Invalid login or password" });
             }
 
-            // 2. User activity checking
+            
             if (user.RevokedOn != null)
             {
                 _logger.LogWarning($"Attempt to access revoked account: {model.Login}");
                 return Forbid("Account is deactivated");
             }
-            return Ok(user);
+
+            return Ok(new UserProfileResponse
+                    (
+                        name: user.Name,
+                        gender: user.Gender,
+                        birthday: user.Birthday,
+                        isActive: user.RevokedOn == null
+                    ));
         }
         catch (Exception ex)
         {
@@ -272,9 +318,16 @@ public class UsersController : ControllerBase
         try
         {
             var cutoffDate = DateTime.Today.AddYears(-age);
-            var users = await _userService.GetUsersBornBeforeAsync(cutoffDate);
+            var olderUsers = await _userService.GetUsersBornBeforeAsync(cutoffDate);
 
-            return Ok(users);
+            var response = olderUsers.Select(u => new UserProfileResponse(
+                name: u.Name,
+                gender: u.Gender,
+                birthday: u.Birthday,
+                isActive: u.RevokedOn == null
+            ));
+
+            return Ok(response);
         }
         catch (Exception ex)
         {
@@ -283,8 +336,6 @@ public class UsersController : ControllerBase
         }
     }
 
-
-    
 
     [HttpDelete("soft-delete/{login}")]
     [Authorize(Roles = "Admin")]
@@ -393,17 +444,20 @@ public class UsersController : ControllerBase
 
             _logger.LogInformation($"User {login} restored by {currentAdmin.Login}");
 
+
+
             return Ok(new
             {
                 Message = $"User '{login}' successfully restored",
+                User = new UserProfileResponse
+                    (
+                        name: restoredUser.Name,
+                        gender: restoredUser.Gender,
+                        birthday: restoredUser.Birthday,
+                        isActive: restoredUser.RevokedOn == null
+                    ),
                 RestoredBy = currentAdmin.Login,
                 RestoredAt = DateTime.UtcNow,
-                User = new
-                {
-                    restoredUser.Login,
-                    restoredUser.Name,
-                    restoredUser.Admin
-                }
             });
         }
         catch (Exception ex)

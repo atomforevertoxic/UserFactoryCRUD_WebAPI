@@ -2,7 +2,7 @@
 
 namespace UserFactory.Models
 {
-    public class ResponseUser
+    public class UserProfileResponse
     {
         [Required]
         [RegularExpression("^[A-Za-zА-Яа-яЁё]+$", ErrorMessage = "The name can only contain Latin and Russian letters")]
@@ -10,6 +10,7 @@ namespace UserFactory.Models
         public string Name { get; set; } = default!;
 
         [Required(ErrorMessage = "The Gender field is required.")]
+        [Range(0, 2)]
         public int? Gender { get; set; }
 
         [Required]
@@ -18,5 +19,15 @@ namespace UserFactory.Models
 
         [Required]
         public bool IsActive {  get; set; }
+
+
+        public UserProfileResponse(string name, int? gender, DateTime? birthday, bool isActive)        
+        {
+            Name = name;
+            Gender = gender;
+            Birthday = birthday;
+            IsActive = isActive;
+        }
+
     }
 }

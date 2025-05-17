@@ -4,9 +4,12 @@ namespace UserFactory.Models
 {
     public class UpdateProfileRequest
     {
-        [StringLength(50)]
+        [Required]
+        [RegularExpression("^[A-Za-zА-Яа-яЁё]+$", ErrorMessage = "The name can only contain Latin and Russian letters")]
+        [StringLength(30, ErrorMessage = "Name cannot be longer than 30 characters")]
         public string Name { get; set; }
 
+        [Required(ErrorMessage = "The Gender field is required.")]
         [Range(0, 2)]
         public int? Gender { get; set; }
 
