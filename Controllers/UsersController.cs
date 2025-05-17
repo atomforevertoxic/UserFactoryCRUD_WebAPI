@@ -44,7 +44,7 @@ public class UsersController : ControllerBase
                 return NotFound($"There is no user with this login: {login}");
             }
 
-            var updatedUser = await _userService.UpdateUserProfileAsync( login, request.Name, request.Gender, request.Birthday, currentUser.Login);
+            var updatedUser = await _userService.UpdateUserProfileAsync( targetUser, request, currentUser.Login);
 
             return Ok(updatedUser);
         }
@@ -89,6 +89,38 @@ public class UsersController : ControllerBase
         {
             _logger.LogError(ex, $"Error changing password for {login}");
             return StatusCode(500, new { Message = "Password change failed" });
+        }
+    }
+
+    [HttpPatch("{login}/change-login")]
+    [Authorize]
+    public async Task<IActionResult> ChangeLogin( string login, [FromBody] ChangeLoginRequest request)
+    {
+        try
+        {
+            var currentUser = await _accountService.GetCurrentUserAsync(User);
+            var targetUser = _userService.GetUserByLogin(login);
+
+            var validationError = ValidateUserAccess(currentUser, targetUser);
+            if (validationError != null) return validationError;
+
+            
+            if (_userService.LoginExistsAsync(request.NewLogin))
+                return Conflict(new { Message = $"Login '{request.NewLogin}' already taken" });
+
+            var updatedUser = await _userService.ChangeLoginAsync(login, request.NewLogin, currentUser.Login);
+
+            return Ok(new
+            {
+                Message = "Login changed successfully",
+                OldLogin = login,
+                NewLogin = updatedUser.Login
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error changing login for {login}");
+            return StatusCode(500, new { Message = "Login change failed" });
         }
     }
 
@@ -229,11 +261,9 @@ public class UsersController : ControllerBase
                 return Unauthorized("Current user not found");
             }
 
-            var duplicate = _userService.GetUserByLogin(user.Login);
-
-            if (duplicate != null)
+            if (_userService.LoginExistsAsync(user.Login))
             {
-                return Conflict($"A user with login '{user.Login}' already exists {duplicate}");
+                return Conflict($"A user with login '{user.Login}' already exists");
             }
 
 

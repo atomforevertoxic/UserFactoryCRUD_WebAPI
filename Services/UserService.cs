@@ -17,11 +17,11 @@ namespace UserFactory.Services
             _context = context;
         }
 
-        public async Task<User> UpdateUserProfileAsync( User modifyingUser, string newName, int? newGender, DateTime? newBirthday, string modifiedBy)
+        public async Task<User> UpdateUserProfileAsync( User modifyingUser, UpdateProfileRequest request, string modifiedBy)
         {
-            modifyingUser.Name = newName ?? modifyingUser.Name;
-            modifyingUser.Gender = newGender ?? modifyingUser.Gender;
-            modifyingUser.Birthday = newBirthday ?? modifyingUser.Birthday;
+            modifyingUser.Name = request.Name?? modifyingUser.Name;
+            modifyingUser.Gender = request.Gender ?? modifyingUser.Gender;
+            modifyingUser.Birthday = request.Birthday ?? modifyingUser.Birthday;
             modifyingUser.ModifiedBy = modifiedBy;
             modifyingUser.ModifiedOn = DateTime.UtcNow;
 
@@ -48,6 +48,11 @@ namespace UserFactory.Services
 
             await _context.SaveChangesAsync();
             return user;
+        }
+
+        public bool LoginExistsAsync(string login)
+        {
+            return _context.Users.Any(u => u.Login == login);
         }
 
         public async Task<IList<User>> GetUsersAsync()
