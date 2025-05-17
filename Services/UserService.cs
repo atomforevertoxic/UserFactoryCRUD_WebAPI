@@ -17,24 +17,38 @@ namespace UserFactory.Services
             _context = context;
         }
 
-        public async Task<User> UpdateUserProfileAsync( string login,
-                                                        string newName,
-                                                        int? newGender,
-                                                        DateTime? newBirthday,
-                                                        string modifiedBy)
+        public async Task<User> UpdateUserProfileAsync( User modifyingUser, string newName, int? newGender, DateTime? newBirthday, string modifiedBy)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Login == login);
+            modifyingUser.Name = newName ?? modifyingUser.Name;
+            modifyingUser.Gender = newGender ?? modifyingUser.Gender;
+            modifyingUser.Birthday = newBirthday ?? modifyingUser.Birthday;
+            modifyingUser.ModifiedBy = modifiedBy;
+            modifyingUser.ModifiedOn = DateTime.UtcNow;
 
-            user.Name = newName ?? user.Name;
-            user.Gender = newGender ?? user.Gender;
-            user.Birthday = newBirthday ?? user.Birthday;
+            await _context.SaveChangesAsync();
+            return modifyingUser;
+        }
+
+        public async Task ChangePasswordAsync(User modifyingUser, string newPassword, string modifiedBy)
+        {
+            modifyingUser.Password = _passwordHasher.HashPassword(modifyingUser, newPassword);
+            modifyingUser.ModifiedBy = modifiedBy;
+            modifyingUser.ModifiedOn = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task<User> ChangeLoginAsync( string oldLogin, string newLogin, string modifiedBy)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Login == oldLogin);
+
+            user.Login = newLogin;
             user.ModifiedBy = modifiedBy;
             user.ModifiedOn = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
             return user;
         }
-
 
         public async Task<IList<User>> GetUsersAsync()
         {
@@ -81,7 +95,7 @@ namespace UserFactory.Services
                 return null; 
             }
 
-            if (VerifyPassword(user, user.Password, model.Password))
+            if (VerifyPassword(user, model.Password))
             {
                 return user;
             }
@@ -94,9 +108,9 @@ namespace UserFactory.Services
             return _context.Users.FirstOrDefault(u => u.Login == login);
         }
 
-        public bool VerifyPassword(User user, string hashedPassword, string providedPassword)
+        public bool VerifyPassword(User user, string providedPassword)
         {
-            var result = _passwordHasher.VerifyHashedPassword(user, hashedPassword, providedPassword);
+            var result = _passwordHasher.VerifyHashedPassword(user, user.Password, providedPassword);
             return result == PasswordVerificationResult.Success;
         }
 

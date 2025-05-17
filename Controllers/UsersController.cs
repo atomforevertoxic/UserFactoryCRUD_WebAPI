@@ -44,11 +44,7 @@ public class UsersController : ControllerBase
                 return NotFound($"There is no user with this login: {login}");
             }
 
-            var updatedUser = await _userService.UpdateUserProfileAsync( login,
-                                                                        request.Name,
-                                                                        request.Gender,
-                                                                        request.Birthday,
-                                                                        currentUser.Login);
+            var updatedUser = await _userService.UpdateUserProfileAsync( login, request.Name, request.Gender, request.Birthday, currentUser.Login);
 
             return Ok(updatedUser);
         }
@@ -71,6 +67,29 @@ public class UsersController : ControllerBase
         }
 
         return null;
+    }
+
+    [HttpPatch("{login}/change-password")]
+    [Authorize]
+    public async Task<IActionResult> ChangePassword( string login, [FromBody] ChangePasswordRequest request)
+    {
+        try
+        {
+            var currentUser = await _accountService.GetCurrentUserAsync(User);
+            var targetUser = _userService.GetUserByLogin(login);
+
+            var validationError = ValidateUserAccess(currentUser, targetUser);
+            if (validationError != null) return validationError;
+
+            await _userService.ChangePasswordAsync(targetUser, request.NewPassword, currentUser.Login);
+
+            return Ok(new { Message = "Password changed successfully" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error changing password for {login}");
+            return StatusCode(500, new { Message = "Password change failed" });
+        }
     }
 
     [HttpGet]
