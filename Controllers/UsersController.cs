@@ -24,6 +24,76 @@ public class UsersController : ControllerBase
         _defaultAdmin = admin.Value;
     }
 
+    [HttpPost("init-default-admin")]
+    [AllowAnonymous]
+    public IActionResult CreateDefaultAdmin()
+    {
+        try
+        {
+            var existingAdmin = _userService.GetUserByLogin(_defaultAdmin.Login);
+            if (existingAdmin != null)
+            {
+                return Conflict("Admin user already exists");
+            }
+
+            _userService.AddUserAsync(_defaultAdmin);
+
+            return CreatedAtAction(
+                nameof(Create),
+                new { id = _defaultAdmin.Id },
+                new
+                {
+                    _defaultAdmin.Id,
+                    _defaultAdmin.Login,
+                    _defaultAdmin.Name,
+                    _defaultAdmin.Admin
+                });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Admin initialization failed");
+            return StatusCode(500, "Failed to initialize admin user");
+        }
+    }
+
+    [HttpPost("create")]
+    [Authorize]
+    public async Task<IActionResult> Create([FromBody] User user)
+    {
+        if (!ModelState.IsValid)
+        {
+            return BadRequest(ModelState);
+        }
+
+        try
+        {
+            var currentUser = await _accountService.GetCurrentUserAsync(User);
+            if (currentUser == null)
+            {
+                return Unauthorized("Current user not found");
+            }
+
+            if (_userService.LoginExistsAsync(user.Login))
+            {
+                return Conflict($"A user with login '{user.Login}' already exists");
+            }
+
+
+            user.CreatedBy = currentUser.Name;
+            user.CreatedOn = DateTime.UtcNow;
+            user.Id = Guid.NewGuid();
+
+            _userService.AddUserAsync(user);
+
+            return CreatedAtAction(nameof(Create), new { id = user.Id }, user);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error creating user. User: {user}");
+            return StatusCode(500, $"Failed to create user  {ex}");
+        }
+    }
+
 
     [HttpPatch("{login}/update-profile")]
     [Authorize]
@@ -69,7 +139,7 @@ public class UsersController : ControllerBase
         return null;
     }
 
-    [HttpPatch("{login}/change-password")]
+    [HttpPatch("{login}/update-password")]
     [Authorize]
     public async Task<IActionResult> ChangePassword( string login, [FromBody] ChangePasswordRequest request)
     {
@@ -92,7 +162,7 @@ public class UsersController : ControllerBase
         }
     }
 
-    [HttpPatch("{login}/change-login")]
+    [HttpPatch("{login}/update-login")]
     [Authorize]
     public async Task<IActionResult> ChangeLogin( string login, [FromBody] ChangeLoginRequest request)
     {
@@ -139,7 +209,7 @@ public class UsersController : ControllerBase
         }
     }
 
-    [HttpGet("by-login/{login}")]
+    [HttpGet("{login}")]
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult<User>> GetUserByLogin(string login)
     {
@@ -166,7 +236,7 @@ public class UsersController : ControllerBase
         }
     }
 
-    [HttpPost("get-by-credentials")] // Post a request so that the information is passed in the body of the request
+    [HttpPost("by-credentials")] // Post a request so that the information is passed in the body of the request
     [Authorize]
     public async Task<ActionResult<ResponseUser>> GetUserByCredentials([FromBody] LoginViewModel model)
     {
@@ -195,9 +265,9 @@ public class UsersController : ControllerBase
         }
     }
 
-    [HttpGet("older-than")]
+    [HttpGet("older-than/{age}")]
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> GetUsersOlderThan([FromQuery] int age)
+    public async Task<IActionResult> GetUsersOlderThan(int age)
     {
         try
         {
@@ -213,77 +283,8 @@ public class UsersController : ControllerBase
         }
     }
 
-    [HttpPost]
-    [Authorize]
-    public async Task<IActionResult> Create([FromBody] User user)
-    {
-        if (!ModelState.IsValid)
-        {
-            return BadRequest(ModelState);
-        }
 
-        try
-        {
-            var currentUser = await _accountService.GetCurrentUserAsync(User);
-            if (currentUser == null)
-            {
-                return Unauthorized("Current user not found");
-            }
-
-            if (_userService.LoginExistsAsync(user.Login))
-            {
-                return Conflict($"A user with login '{user.Login}' already exists");
-            }
-
-
-            user.CreatedBy = currentUser.Name;
-            user.CreatedOn = DateTime.UtcNow;
-            user.Id = Guid.NewGuid();
-
-            _userService.AddUserAsync(user);
-
-            return CreatedAtAction(nameof(Create), new { id = user.Id }, user);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, $"Error creating user. User: {user}");
-            return StatusCode(500, $"Failed to create user  {ex}");
-        }
-    }
-
-
-
-    [HttpPost("init-default-admin")]
-    [AllowAnonymous]
-    public async Task<IActionResult> CreateDefaultAdmin()
-    {
-        try
-        {
-            var existingAdmin = _userService.GetUserByLogin(_defaultAdmin.Login);
-            if (existingAdmin != null)
-            {
-                return Conflict("Admin user already exists");
-            }
-
-            _userService.AddUserAsync(_defaultAdmin);
-
-            return CreatedAtAction(
-                nameof(Create),
-                new { id = _defaultAdmin.Id },
-                new
-                {
-                    _defaultAdmin.Id,
-                    _defaultAdmin.Login,
-                    _defaultAdmin.Name,
-                    _defaultAdmin.Admin
-                });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Admin initialization failed");
-            return StatusCode(500, "Failed to initialize admin user");
-        }
-    }
+    
 
     [HttpDelete("soft-delete/{login}")]
     [Authorize(Roles = "Admin")]
