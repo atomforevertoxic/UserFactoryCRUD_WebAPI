@@ -76,7 +76,7 @@ public class UsersController : ControllerBase
     {
         try
         {
-            User user = await _userService.GetUserByLoginAsync(login);
+            User? user = _userService.GetUserByLogin(login);
             if (user==null)
             {
                 _logger.LogError("Non-existent login");
@@ -161,9 +161,11 @@ public class UsersController : ControllerBase
                 return Unauthorized("Current user not found");
             }
 
-            if (_userService.GetUserByLoginAsync(user.Login)!=null)
+            var duplicate = _userService.GetUserByLogin(user.Login);
+
+            if (duplicate!=null)
             {
-                return Conflict($"A user with login '{user.Login}' already exists.");
+                return Conflict($"A user with login '{user.Login}' already exists {duplicate}");
             }
 
 
@@ -190,7 +192,7 @@ public class UsersController : ControllerBase
     {
         try
         {
-            var existingAdmin = await _userService.GetUserByLoginAsync(_defaultAdmin.Login);
+            var existingAdmin = _userService.GetUserByLogin(_defaultAdmin.Login);
             if (existingAdmin != null)
             {
                 return Conflict("Admin user already exists");
@@ -213,6 +215,84 @@ public class UsersController : ControllerBase
         {
             _logger.LogError(ex, "Admin initialization failed");
             return StatusCode(500, "Failed to initialize admin user");
+        }
+    }
+
+    [HttpDelete("soft-delete/{login}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> SoftUserDelete(string login)
+    {
+        try
+        {
+            var currentAdmin = await _accountService.GetCurrentUserAsync(User);
+
+            if (currentAdmin.Login.Equals(login, StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogWarning($"Admin {currentAdmin.Login} attempted to self-delete");
+                return BadRequest(new { Message = "Admin cannot self-delete" });
+            }
+
+            var deletingUser = _userService.GetUserByLogin(login);
+            if (deletingUser == null)
+            {
+                _logger.LogWarning($"Attempt to delete non-existent user: {login}");
+                return NotFound(new { Message = $"User with login '{login}' not found" });
+            }
+
+            if (deletingUser.RevokedOn != null)
+            {
+                _logger.LogWarning($"Attempt to soft-delete already deleted user: {login}");
+                return Conflict(new { Message = $"User {login} is already deleted" });
+            }
+
+            var result = await _userService.SoftDeleteAsync(login, currentAdmin.Name);
+
+            _logger.LogInformation($"User {login} soft-deleted by {currentAdmin.Name}");
+            return Ok(new
+            {
+                Message = $"User {login} was soft-deleted",
+                result.RevokedOn,
+                result.RevokedBy
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error during soft-delete of user {login}");
+            return StatusCode(500, new { Message = "Internal server error during soft-delete" });
+        }
+    }
+
+    [HttpDelete("full-delete/{login}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> FullUserDelete(string login)
+    {
+        try
+        {
+            var currentAdmin = await _accountService.GetCurrentUserAsync(User);
+
+            if (currentAdmin.Login.Equals(login, StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogWarning($"Admin {currentAdmin.Login} attempted to self-delete");
+                return BadRequest(new { Message = "Admin cannot self-delete" });
+            }
+
+
+            var userExists = _userService.GetUserByLogin(login);
+            if (userExists==null)
+            {
+                _logger.LogWarning($"Attempt to delete non-existent user: {login}");
+                return NotFound(new { Message = $"User with login '{login}' not found" });
+            }
+
+            await _userService.FullDeleteAsync(login);
+
+            _logger.LogInformation($"User {login} permanently deleted by {currentAdmin.Name}");
+            return Ok(new { Message = $"User {login} was permanently deleted" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error during full-delete of user {login}");
+            return StatusCode(500, new { Message = "Internal server error during deletion" });
         }
     }
 }

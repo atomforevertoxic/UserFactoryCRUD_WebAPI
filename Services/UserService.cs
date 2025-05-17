@@ -46,7 +46,7 @@ namespace UserFactory.Services
             return await _context.Users.FindAsync(guid);
         }
 
-        public async void AddUserAsync(User user)
+        public async Task AddUserAsync(User user)
         {
             user.Password = _passwordHasher.HashPassword(user, user.Password);
 
@@ -56,7 +56,7 @@ namespace UserFactory.Services
 
         public async Task<User> AuthenticateUserAsync(LoginViewModel model)
         {
-            var user = await GetUserByLoginAsync(model.Login);
+            var user = GetUserByLogin(model.Login);
             if (user == null)
             {
                 return null; 
@@ -70,9 +70,9 @@ namespace UserFactory.Services
             return null;
         }
 
-        public async Task<User> GetUserByLoginAsync(string login)
+        public User? GetUserByLogin(string login)
         {
-            return await _context.Users.FirstOrDefaultAsync(u => u.Login == login);
+            return _context.Users.FirstOrDefault(u => u.Login == login);
         }
 
         public bool VerifyPassword(User user, string hashedPassword, string providedPassword)
@@ -87,5 +87,32 @@ namespace UserFactory.Services
                 .Where(u => u.Birthday != null && u.Birthday <= cutoffDate)
                 .ToListAsync();
         }
+
+
+        public async Task<User> SoftDeleteAsync(string login, string revokedBy)
+        {
+            var user = await _context.Users
+                .FirstOrDefaultAsync(u => u.Login == login && u.RevokedOn == null)
+                ?? throw new InvalidOperationException($"Active user with login '{login}' not found");
+
+            user.RevokedOn = DateTime.UtcNow;
+            user.RevokedBy = revokedBy;
+
+            _context.Users.Update(user);
+            await _context.SaveChangesAsync();
+
+            return user;
+        }
+
+        public async Task FullDeleteAsync(string login)
+        {
+            var user = await _context.Users
+                .FirstOrDefaultAsync(u => u.Login == login)
+                ?? throw new InvalidOperationException($"User with login '{login}' not found");
+
+            _context.Users.Remove(user);
+            await _context.SaveChangesAsync();
+        }
+
     }
 }

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using UserFactory.Data;
@@ -7,7 +8,6 @@ using UserFactory.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Добавляем Swagger
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
@@ -18,23 +18,16 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// База данных
 builder.Services.AddDbContext<WebDbContext>(options =>
     options.UseInMemoryDatabase("InMemoryDb"));
 
-// Добавляем поддержку API контроллеров
 builder.Services.AddControllers();
 
-// Если вам действительно нужны MVC-возможности (например, для Views), раскомментируйте:
-// builder.Services.AddControllersWithViews();
-
-// Сервисы
 builder.Services.AddTransient<UserService>();
 builder.Services.AddTransient<AccountService>();
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddHttpContextAccessor();
 
-// Аутентификация
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
@@ -46,19 +39,26 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.ExpireTimeSpan = TimeSpan.FromDays(1);
     });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminOnly", policy =>
+        policy.RequireRole("Admin")
+              .RequireAuthenticatedUser());
 
-// Конфигурация администратора
+    options.AddPolicy("Authenticated", policy =>
+        policy.RequireAuthenticatedUser());
+});
+
 builder.Services.Configure<User>(builder.Configuration.GetSection("DefaultAdminUser"));
 
 var app = builder.Build();
 
 app.UseDeveloperExceptionPage();
-app.UseSwagger(); // Генерируем swagger.json
+app.UseSwagger(); 
 app.UseSwaggerUI(c =>
 {
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
-    c.RoutePrefix = "swagger"; // URL для UI: /swagger
+    c.RoutePrefix = "swagger"; 
 });
 
 app.UseHttpsRedirection();
@@ -69,7 +69,6 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Для API-контроллеров
 app.MapControllers();
 
 app.Run();

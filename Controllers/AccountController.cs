@@ -43,7 +43,7 @@ namespace UserFactory.Controllers
         }
 
         [HttpPost("logout")]
-        [Authorize] //needs error message!
+        [Authorize]
         public async Task<IActionResult> Logout()
         {
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
