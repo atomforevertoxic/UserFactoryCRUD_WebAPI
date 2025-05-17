@@ -24,6 +24,55 @@ public class UsersController : ControllerBase
         _defaultAdmin = admin.Value;
     }
 
+
+    [HttpPatch("{login}/update-profile")]
+    [Authorize]
+    public async Task<IActionResult> UpdateUserProfile( string login, [FromBody] UpdateProfileRequest request)
+    {
+        try
+        {
+            var currentUser = await _accountService.GetCurrentUserAsync(User);
+
+            var targetUser = _userService.GetUserByLogin(login);
+
+            var validationError = ValidateUserAccess(currentUser, targetUser);
+            if (validationError != null) return validationError;
+
+            if (targetUser==null)
+            {
+                _logger.LogError("Non-existent login");
+                return NotFound($"There is no user with this login: {login}");
+            }
+
+            var updatedUser = await _userService.UpdateUserProfileAsync( login,
+                                                                        request.Name,
+                                                                        request.Gender,
+                                                                        request.Birthday,
+                                                                        currentUser.Login);
+
+            return Ok(updatedUser);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Error updating profile for login");
+            return StatusCode(500, new { Message = "Profile update failed" });
+        }
+    }
+
+    private IActionResult ValidateUserAccess(User currentUser, User targetUser)
+    {
+        if (targetUser.RevokedOn != null)
+        {
+            return BadRequest(new { Message = "Modifying user account is deactivated" });
+        }
+        else if (!currentUser.Login.Equals(targetUser.Login, StringComparison.OrdinalIgnoreCase) && !currentUser.Admin)
+        {
+            return Forbid();
+        }
+
+        return null;
+    }
+
     [HttpGet]
     [Authorize]
     public async Task<ActionResult<IEnumerable<User>>> GetAll()

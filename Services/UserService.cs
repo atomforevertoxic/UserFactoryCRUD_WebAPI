@@ -17,6 +17,25 @@ namespace UserFactory.Services
             _context = context;
         }
 
+        public async Task<User> UpdateUserProfileAsync( string login,
+                                                        string newName,
+                                                        int? newGender,
+                                                        DateTime? newBirthday,
+                                                        string modifiedBy)
+        {
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Login == login);
+
+            user.Name = newName ?? user.Name;
+            user.Gender = newGender ?? user.Gender;
+            user.Birthday = newBirthday ?? user.Birthday;
+            user.ModifiedBy = modifiedBy;
+            user.ModifiedOn = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+            return user;
+        }
+
+
         public async Task<IList<User>> GetUsersAsync()
         {
             if (_context.Users != null)
