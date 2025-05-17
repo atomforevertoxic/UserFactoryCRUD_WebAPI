@@ -76,14 +76,6 @@ namespace UserFactory.Services
             return new List<User>();
         }
 
-        public async Task<User?> GetByGuidAsync(Guid guid)
-        {
-            if (_context == null) return null;
-            else if (_context.Users == null || _context.Users.Count() == 0) return null;
-
-            return await _context.Users.FindAsync(guid);
-        }
-
         public async Task AddUserAsync(User user)
         {
             user.Password = _passwordHasher.HashPassword(user, user.Password);

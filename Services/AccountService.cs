@@ -22,7 +22,7 @@ namespace UserFactory.Services
             var claims = new List<Claim>
         {
             new Claim("Guid", user.Id.ToString()),
-            new Claim(ClaimTypes.Name, user.Login),
+            new Claim("Login", user.Login),
             new Claim(ClaimTypes.Role, user.Admin ? "Admin" : "User")
         };
 
@@ -35,13 +35,9 @@ namespace UserFactory.Services
 
         public async Task<User?> GetCurrentUserAsync(ClaimsPrincipal principal)
         {
-            var userIdClaim = principal.FindFirst("Guid");
-            if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
-            {
-                return null;
-            }
+            var loginClaim = principal.FindFirst("Login").Value;
 
-            return await _userService.GetByGuidAsync(userId);
+            return _userService.GetUserByLogin(loginClaim);
         }
     }
 }

@@ -49,13 +49,5 @@ namespace UserFactory.Controllers
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             return Ok(new { message = "Logout successful" });
         }
-
-        [HttpGet("current-user")]
-        [Authorize]
-        public async Task<IActionResult> GetCurrentUser()
-        {
-            var user = await _accountService.GetCurrentUserAsync(User);
-            return user != null ? Ok(user) : Unauthorized();
-        }
     }
 }

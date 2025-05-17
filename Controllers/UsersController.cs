@@ -124,37 +124,6 @@ public class UsersController : ControllerBase
         }
     }
 
-    [HttpGet]
-    [Authorize]
-    public async Task<ActionResult<IEnumerable<User>>> GetAll()
-    {
-        try
-        {
-            return Ok(await _userService.GetUsersAsync());
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "GetAll error");
-            return StatusCode(500);
-        }
-    }
-
-    [HttpGet("{id:guid}")]
-    [AllowAnonymous]
-    public async Task<ActionResult<User>> GetById(Guid id)
-    {
-        try
-        {
-            var user = await _userService.GetByGuidAsync(id);
-            return user != null ? Ok(user) : NotFound();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, $"Error getting user with GUID: {id}");
-            return StatusCode(500, "Internal server error");
-        }
-    }
-
     [HttpGet("active")]
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult<IEnumerable<User>>> GetActive()
@@ -273,12 +242,12 @@ public class UsersController : ControllerBase
 
             _userService.AddUserAsync(user);
 
-            return CreatedAtAction(nameof(GetById), new { id = user.Id }, user);
+            return CreatedAtAction(nameof(Create), new { id = user.Id }, user);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, $"Error creating user. User: {user}");
-            return StatusCode(500, "Failed to create user");
+            return StatusCode(500, $"Failed to create user  {ex}");
         }
     }
 
@@ -299,7 +268,7 @@ public class UsersController : ControllerBase
             _userService.AddUserAsync(_defaultAdmin);
 
             return CreatedAtAction(
-                nameof(GetById),
+                nameof(Create),
                 new { id = _defaultAdmin.Id },
                 new
                 {
