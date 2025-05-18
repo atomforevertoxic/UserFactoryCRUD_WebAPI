@@ -39,7 +39,7 @@ namespace UserFactory.Controllers
                     ExpiresUtc = DateTimeOffset.UtcNow.AddDays(1)
                 });
 
-            return Ok(new { message = "Login successful", user });
+            return Ok(new { message = "Login successful"});
         }
 
         [HttpPost("logout")]

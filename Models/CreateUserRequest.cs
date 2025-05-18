@@ -1,12 +1,9 @@
-﻿using System;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace UserFactory.Models
 {
-    public class User
+    public class CreateUserRequest
     {
-        public Guid Id { get; set; } = Guid.NewGuid();
-
         [Required]
         [RegularExpression("^[A-Za-z0-9]+$", ErrorMessage = "Login can contain only Latin letters and numbers")]
         [StringLength(30, MinimumLength = 3, ErrorMessage = "Login must be between 3 and 30 characters")]
@@ -30,25 +27,5 @@ namespace UserFactory.Models
         public DateTime? Birthday { get; set; }
 
         public bool Admin { get; set; } = false;
-
-        public DateTime CreatedOn { get; set; } = DateTime.UtcNow;
-        public string? CreatedBy { get; set; }
-
-        public DateTime? ModifiedOn { get; set; }
-        public string? ModifiedBy { get; set; }
-
-        public DateTime? RevokedOn { get; set; }
-        public string? RevokedBy { get; set; }
-
-        public User() { }
-
-        public User(CreateUserRequest request)
-        {
-            Login = request.Login;
-            Password = request.Password;
-            Name = request.Name;
-            Gender = request.Gender;
-            Birthday = request.Birthday;
-        }
     }
 }

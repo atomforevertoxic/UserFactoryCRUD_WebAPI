@@ -8,7 +8,6 @@ using UserFactory.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Добавляем Swagger
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
@@ -29,7 +28,13 @@ builder.Services.AddSwaggerGen(c =>
    🔹 Password: `AdminPass123`
 
 3. **Start Managing Users**  
-   After authentication, you can access all admin endpoints."
+   After authentication, you can access all admin endpoints.
+
+### Important Security Notice:
+
+**Authorization cookies are preserved after server restart**  
+For security reasons, please always:
+- Log out explicitly using the `/api/Account/logout` endpoint"
     });
 });
 
@@ -67,7 +72,7 @@ app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
-    c.RoutePrefix = string.Empty; // Это сделает Swagger UI доступным по корневому URL
+    c.RoutePrefix = string.Empty; 
 });
 
 app.UseHttpsRedirection();
@@ -78,7 +83,7 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Добавляем перенаправление с корневого URL на Swagger
+
 app.MapGet("/", context =>
 {
     context.Response.Redirect("/swagger");

@@ -43,7 +43,7 @@ public class UsersController : ControllerBase
 
     [HttpPost("init-default-admin")]
     [AllowAnonymous]
-    public IActionResult CreateDefaultAdmin()
+    public async Task<IActionResult> CreateDefaultAdmin()
     {
         try
         {
@@ -53,7 +53,7 @@ public class UsersController : ControllerBase
                 return Conflict("Admin user already exists");
             }
 
-            _userService.AddUserAsync(_defaultAdmin);
+            await _userService.AddUserAsync(_defaultAdmin);
 
             return CreatedAtAction(
                 nameof(Create),
@@ -69,13 +69,13 @@ public class UsersController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Admin initialization failed");
-            return StatusCode(500, "Failed to initialize admin user");
+            return StatusCode(500, $"Failed to initialize admin user");
         }
     }
 
     [HttpPost("create")]
     [Authorize]
-    public async Task<IActionResult> Create([FromBody] User user)
+    public async Task<IActionResult> Create([FromBody] CreateUserRequest request)
     {
         if (!ModelState.IsValid)
         {
@@ -85,28 +85,37 @@ public class UsersController : ControllerBase
         try
         {
             var currentUser = await _accountService.GetCurrentUserAsync(User);
-            if (currentUser == null)
+            if (!currentUser.Admin && request.Admin)
             {
-                return Unauthorized("Current user not found");
+                _logger.LogError($"User {currentUser.Login} has no right to create admins");
+                return Conflict("You have no right to create admin user!");
             }
 
-            if (_userService.LoginExistsAsync(user.Login))
+            if (_userService.LoginExistsAsync(request.Login))
             {
-                return Conflict($"A user with login '{user.Login}' already exists");
+                return Conflict($"A user with login '{request.Login}' already exists");
             }
 
+            User newUser = new User(request);
 
-            user.CreatedBy = currentUser.Name;
-            user.CreatedOn = DateTime.UtcNow;
-            user.Id = Guid.NewGuid();
+            newUser.Admin = request.Admin;
+            newUser.CreatedBy = currentUser.Name;
+            
 
-            _userService.AddUserAsync(user);
+            await _userService.AddUserAsync(newUser);
 
-            return CreatedAtAction(nameof(Create), user.Login);
+            _logger.LogInformation($"User {newUser.Login} created successfully");
+            return CreatedAtAction(nameof(Create), new {Message = "Success user creation" }, new
+            {
+                newUser.Id,
+                newUser.Login,
+                newUser.Name,
+                newUser.Admin
+            });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, $"Error creating user. User: {user}");
+            _logger.LogError(ex, $"Error creating user. User: {request}");
             return StatusCode(500, $"Failed to create user  {ex}");
         }
     }
