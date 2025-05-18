@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authentication.Cookies;
+﻿using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -8,13 +8,28 @@ using UserFactory.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Добавляем Swagger
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
     {
-        Title = "My API",
+        Title = "User Management API",
         Version = "v1",
-        Description = "Default admin| Login: Admin, Password: AdminPass123\nCreate admin by api before login like administrator"
+        Description = @"
+### Initial Setup Instructions:
+
+1. **Create Default Admin**  
+   First, execute the endpoint:  
+   🔹 `POST /api/users/init-default-admin`  
+   This will create the default administrator account.
+
+2. **Login as Admin**  
+   Use the default credentials to authenticate:  
+   🔹 Login: `Admin`  
+   🔹 Password: `AdminPass123`
+
+3. **Start Managing Users**  
+   After authentication, you can access all admin endpoints."
     });
 });
 
@@ -48,11 +63,11 @@ if (app.Environment.IsDevelopment())
     app.UseDeveloperExceptionPage();
 }
 
-app.UseSwagger(); 
+app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
-    c.RoutePrefix = "swagger"; 
+    c.RoutePrefix = string.Empty; // Это сделает Swagger UI доступным по корневому URL
 });
 
 app.UseHttpsRedirection();
@@ -62,6 +77,13 @@ app.UseRouting();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Добавляем перенаправление с корневого URL на Swagger
+app.MapGet("/", context =>
+{
+    context.Response.Redirect("/swagger");
+    return Task.CompletedTask;
+});
 
 app.MapControllers();
 
